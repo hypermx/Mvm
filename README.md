@@ -8,11 +8,11 @@ This project is in active development. Contributions are welcome.
 
 ---
 
-## Conceptual Model
+## Conceptual Overview
 
 Instead of asking:
 
-> "What caused my migraine?"
+> “What caused my migraine?”
 
 We model:
 
@@ -20,15 +20,20 @@ We model:
 * Evolving over time based on physiological and behavioral inputs
 * Migraines occur when `v_t` crosses a learned threshold
 
+Formally:
+
 ```
-v_{t+1} = f(v_t, x_t)          # latent vulnerability evolves over time
-migraine_t = 1  if  v_t > θ    # migraine when threshold is crossed
+v_{t+1} = f(v_t, x_t)
+migraine_t = 1 if v_t > θ
 ```
 
-where
-- `v_t` is the latent vulnerability score ∈ [0, 1]
-- `x_t` is the day's feature vector (sleep, stress, hydration, caffeine, …)
-- `θ` is a learnable personal threshold
+Where:
+
+* `x_t` = observed inputs (sleep, stress, hydration, nutrition, etc.)
+* `v_t` = latent vulnerability
+* `θ` = personal or global instability threshold
+
+This is implemented as a nonlinear neural state-space model with personalization and intervention simulation capabilities.
 
 ---
 
@@ -36,139 +41,100 @@ where
 
 * Learn a global representation of migraine dynamics from pooled data
 * Adapt models to individual users with minimal personal data
-* Enable counterfactual simulation ("What if I sleep 8 hours tonight?")
+* Enable counterfactual simulation (“What if I sleep 8 hours tonight?”)
 * Provide constrained, safe intervention suggestions
 * Maintain strong privacy guarantees
 * Encourage interdisciplinary collaboration (ML, neuroscience, clinical insight)
 
 ---
 
-## Architecture
+## Architecture Overview
 
-MVM has four conceptual layers:
+### Layer 1 – Global Representation Model
 
-| Layer | Description |
-|---|---|
-| **Foundation model** | GRU-based state-space model pre-trained on pooled population data |
-| **Personal adapter** | Lightweight per-user fine-tuning layer + personal threshold parameter |
-| **Simulation engine** | Monte-Carlo counterfactual rollouts ("what if I slept 2 h more?") |
-| **Policy optimiser** | Constrained optimisation returning ranked lifestyle interventions |
+A neural state-space backbone (Transformer or TCN-based) that:
+
+* Learns temporal physiological dynamics
+* Produces a latent vulnerability state
+* Models smooth accumulation and recovery
+* Outputs calibrated migraine risk probabilities
+
+Pretraining includes self-supervised sequence learning.
 
 ---
 
-## Repository Structure
+### Layer 2 – Personal Adaptation
+
+Lightweight per-user adaptation using:
+
+* Adapter modules or LoRA-style updates
+* Personal threshold parameters
+* Regularization toward global priors
+
+Designed to prevent overfitting on small personal datasets.
+
+---
+
+### Layer 3 – Counterfactual Engine
+
+Differentiable forward simulation of vulnerability trajectories under hypothetical input sequences.
+
+Supports:
+
+* Multi-day simulation rollouts
+* Uncertainty propagation
+* Safe intervention constraints
+
+---
+
+### Layer 4 – Policy Optimization
+
+Constrained optimization (initially not RL) that:
+
+* Minimizes predicted threshold crossings
+* Respects realistic behavioral bounds
+* Outputs ranked intervention suggestions with uncertainty estimates
+
+---
+
+## Repository Structure (Planned)
 
 ```
 /backend
-  /api            FastAPI REST endpoints
-  /data_schema    Pydantic request/response models
-  /ingestion      Validation, imputation, normalisation pipeline
-  /privacy        Fernet encryption & anonymisation utilities
+  /api
+  /data_schema
+  /ingestion
+  /privacy
 /models
-  /foundation     NeuralStateSpaceModel (GRU + latent projection)
-  /personal       PersonalAdapter (per-user fine-tuning)
-  /simulation     CounterfactualSimulator (MC-dropout rollouts)
-  /optimization   InterventionOptimizer (constrained suggestions)
-  baseline.py     Logistic regression + gradient boosting baselines
+  /foundation
+  /personal
+  /simulation
+  /optimization
+/frontend
+  /dashboard
+  /logging
+  /simulation_ui
 /training
-  /pretraining    Pre-train foundation model on pooled DataLoader
-  /fine_tuning    Fine-tune personal adapter on individual logs
-  /evaluation     Metrics, calibration curves, trajectory plots
-/tests            pytest test suite (schema, ingestion, privacy, models, API)
-/docs             Additional documentation
-pyproject.toml    Project metadata and dependencies
-requirements.txt  pip-installable dependency list
+  /pretraining
+  /fine_tuning
+  /evaluation
+/docs
+/tests
 ```
 
 ---
 
-## Installation
+## Current Scope (v1)
 
-```bash
-# Clone the repository
-git clone https://github.com/hypermx/Mvm.git
-cd Mvm
+To maintain rigor and stability, the first public version will:
 
-# Create and activate a virtual environment (recommended)
-python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+* Use daily time resolution
+* Support a limited, validated feature set (sleep, stress, hydration, etc.)
+* Include simple baseline models (logistic regression, gradient boosting)
+* Avoid medication adjustment recommendations
+* Focus on simulation and risk stabilization
 
-# Install in editable mode (includes all dependencies)
-pip install -e .
-```
-
----
-
-## Quick Start
-
-```python
-from datetime import date
-from backend.data_schema.models import DailyLog, UserProfile
-from backend.ingestion.ingestion import DataIngestionPipeline
-from models.foundation.model import NeuralStateSpaceModel
-from models.personal.adapter import PersonalAdapter
-from models.simulation.simulator import CounterfactualSimulator
-
-# 1. Build a daily log
-log = DailyLog(
-    date=date.today(),
-    sleep_hours=6.5,
-    sleep_quality=5.0,
-    stress_level=7.0,
-    hydration_liters=1.5,
-    caffeine_mg=200.0,
-    migraine_occurred=False,
-)
-
-# 2. Ingest (validate + normalise)
-pipeline = DataIngestionPipeline()
-result = pipeline.ingest_daily_log(log, user_id="alice")
-print(result["normalized_features"])
-
-# 3. Personal model inference
-foundation = NeuralStateSpaceModel(input_dim=8, hidden_dim=64, latent_dim=32)
-adapter = PersonalAdapter(foundation, user_id="alice")
-
-import torch
-features = torch.tensor(result["normalized_features"]).unsqueeze(0).unsqueeze(0)
-vuln, prob = adapter(features)
-print(f"Vulnerability: {vuln.item():.3f}  |  Migraine probability: {prob.item():.3f}")
-
-# 4. Counterfactual simulation
-simulator = CounterfactualSimulator()
-sim_result = simulator.simulate(
-    baseline_logs=[log],
-    modifications={"sleep_hours": 9.0, "stress_level": 3.0},
-    model=adapter,
-)
-print(sim_result)
-```
-
-### Running the API server
-
-```bash
-uvicorn backend.api.app:app --reload
-# Visit http://localhost:8000/docs for the interactive Swagger UI
-```
-
-### Running tests
-
-```bash
-pytest tests/ -v
-```
-
----
-
-## API Endpoints
-
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/users` | Create user profile |
-| `GET` | `/users/{user_id}` | Retrieve user profile |
-| `POST` | `/logs/{user_id}` | Submit a daily health log |
-| `GET` | `/vulnerability/{user_id}` | Current vulnerability score |
-| `POST` | `/simulate/{user_id}` | Run a counterfactual simulation |
-| `GET` | `/interventions/{user_id}` | Get ranked intervention suggestions |
+Complex extensions (e.g., menstrual cycle modeling, high-frequency data, reinforcement learning) will be added incrementally.
 
 ---
 
@@ -188,7 +154,9 @@ Future roadmap may include federated learning.
 
 ## Scientific Standards
 
-This is not a "trigger finder."
+This is not a “trigger finder.”
+
+We aim to model physiological dynamics responsibly.
 
 All contributions should:
 
@@ -202,19 +170,50 @@ Pull requests that improve scientific validity are strongly encouraged.
 
 ---
 
-## Contributing
+## How to Contribute
 
-We welcome pull requests, documentation improvements, benchmark contributions, and privacy/security review.
+We welcome:
+
+* Pull requests (model improvements, infrastructure, UI, testing)
+* Documentation improvements
+* Benchmark contributions
+* Privacy and security review
+* Practical experience from:
+
+  * Neuroscience
+  * Headache medicine
+  * Behavioral science
+  * Control systems
+  * Causal inference
+  * Human-computer interaction
+
+If you have real-world migraine research or clinical experience, your input is especially valuable.
 
 Before submitting a PR:
 
-1. Fork the repository and create a feature branch.
-2. Install dev extras: `pip install -e ".[dev]"`
-3. Run `pytest tests/ -v` and ensure all tests pass.
-4. Open an issue describing the proposal, then open a pull request with a clear description of your changes and evaluation metrics.
+* Open an issue describing the proposal
+* Include reasoning and expected impact
+* Provide evaluation metrics
+* Add tests where applicable
 
 ---
 
 ## Disclaimer
 
-MVM is a research prototype.  It is **not** a medical device and should **not** be used as a substitute for professional medical advice, diagnosis, or treatment.  Always consult a qualified healthcare provider about migraine management.
+This project is for research and educational purposes only.
+
+It does not provide medical advice and should not replace consultation with a qualified healthcare professional.
+
+---
+
+## Long-Term Vision
+
+To build an open, privacy-respecting, scientifically grounded system that:
+
+* Models neurological vulnerability as a dynamic system
+* Enables personalized stabilization strategies
+* Bridges machine learning and neuroscience
+* Encourages interdisciplinary collaboration
+
+If you’re interested in contributing at any level—code, science, review, critique—we invite you to join.
+
