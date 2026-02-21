@@ -1,0 +1,160 @@
+"""Tests for the FastAPI backend."""
+from __future__ import annotations
+
+from datetime import date
+
+import pytest
+from fastapi.testclient import TestClient
+
+from backend.api.app import app, _user_profiles, _user_logs, _adapters
+
+
+@pytest.fixture(autouse=True)
+def clear_state():
+    """Reset in-memory state between tests."""
+    _user_profiles.clear()
+    _user_logs.clear()
+    _adapters.clear()
+    yield
+    _user_profiles.clear()
+    _user_logs.clear()
+    _adapters.clear()
+
+
+@pytest.fixture()
+def client() -> TestClient:
+    return TestClient(app)
+
+
+@pytest.fixture()
+def created_user(client) -> dict:
+    payload = {
+        "user_id": "api_test_user",
+        "age": 30,
+        "sex": "female",
+        "migraine_history_years": 3.0,
+        "average_migraine_frequency": 2.0,
+    }
+    resp = client.post("/users", json=payload)
+    assert resp.status_code == 201
+    return resp.json()
+
+
+class TestUsers:
+    def test_create_user(self, client):
+        payload = {
+            "user_id": "u1",
+            "age": 28,
+            "sex": "male",
+            "migraine_history_years": 2.0,
+            "average_migraine_frequency": 1.5,
+        }
+        resp = client.post("/users", json=payload)
+        assert resp.status_code == 201
+        assert resp.json()["user_id"] == "u1"
+
+    def test_create_duplicate_user(self, client, created_user):
+        payload = {
+            "user_id": "api_test_user",
+            "age": 30,
+            "sex": "female",
+            "migraine_history_years": 3.0,
+            "average_migraine_frequency": 2.0,
+        }
+        resp = client.post("/users", json=payload)
+        assert resp.status_code == 409
+
+    def test_get_user(self, client, created_user):
+        resp = client.get("/users/api_test_user")
+        assert resp.status_code == 200
+        assert resp.json()["user_id"] == "api_test_user"
+
+    def test_get_nonexistent_user(self, client):
+        resp = client.get("/users/nobody")
+        assert resp.status_code == 404
+
+
+class TestLogs:
+    def test_submit_log(self, client, created_user):
+        log_payload = {
+            "date": "2024-01-15",
+            "sleep_hours": 7.5,
+            "sleep_quality": 7.0,
+            "stress_level": 3.0,
+            "hydration_liters": 2.0,
+            "caffeine_mg": 100.0,
+            "alcohol_units": 0.0,
+            "exercise_minutes": 30.0,
+            "migraine_occurred": False,
+        }
+        resp = client.post("/logs/api_test_user", json=log_payload)
+        assert resp.status_code == 201
+        data = resp.json()
+        assert "normalized_features" in data
+
+    def test_submit_log_unknown_user(self, client):
+        log_payload = {
+            "date": "2024-01-15",
+            "sleep_hours": 7.0,
+            "sleep_quality": 6.0,
+            "stress_level": 4.0,
+            "hydration_liters": 2.0,
+            "migraine_occurred": False,
+        }
+        resp = client.post("/logs/ghost_user", json=log_payload)
+        assert resp.status_code == 404
+
+
+class TestVulnerability:
+    def test_get_vulnerability_no_logs(self, client, created_user):
+        resp = client.get("/vulnerability/api_test_user")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "vulnerability_score" in data
+        assert data["confidence"] == 0.0
+
+    def test_get_vulnerability_with_logs(self, client, created_user):
+        log_payload = {
+            "date": "2024-01-15",
+            "sleep_hours": 7.0,
+            "sleep_quality": 6.0,
+            "stress_level": 4.0,
+            "hydration_liters": 2.0,
+            "migraine_occurred": False,
+        }
+        client.post("/logs/api_test_user", json=log_payload)
+        resp = client.get("/vulnerability/api_test_user")
+        assert resp.status_code == 200
+        score = resp.json()["vulnerability_score"]
+        assert 0.0 <= score <= 1.0
+
+
+class TestSimulation:
+    def test_run_simulation(self, client, created_user):
+        payload = {
+            "user_id": "api_test_user",
+            "baseline_logs": [
+                {
+                    "date": "2024-01-15",
+                    "sleep_hours": 6.0,
+                    "sleep_quality": 5.0,
+                    "stress_level": 7.0,
+                    "hydration_liters": 1.5,
+                    "migraine_occurred": False,
+                }
+            ],
+            "hypothetical_modifications": {"sleep_hours": 9.0},
+        }
+        resp = client.post("/simulate/api_test_user", json=payload)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "trajectory" in data
+        assert "migraine_risk" in data
+        assert "uncertainty" in data
+
+
+class TestInterventions:
+    def test_get_interventions_no_logs(self, client, created_user):
+        resp = client.get("/interventions/api_test_user")
+        assert resp.status_code == 200
+        assert isinstance(resp.json(), list)
