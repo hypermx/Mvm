@@ -1,6 +1,11 @@
 """Shared pytest fixtures for MVM tests."""
 from __future__ import annotations
 
+import os
+
+# Set required environment variables before any application modules are imported.
+os.environ.setdefault("MVM_APP_SALT", "test-salt-do-not-use-in-production")
+
 from datetime import date
 
 import numpy as np

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from typing import Any
 
 from cryptography.fernet import Fernet
@@ -11,8 +12,23 @@ import base64
 
 from backend.data_schema.models import DailyLog
 
-# Static application salt – in production this should be a securely stored secret.
-_APP_SALT: bytes = b"mvm-privacy-salt-v1"
+
+def _load_app_salt() -> bytes:
+    """Load the application salt from the MVM_APP_SALT environment variable.
+
+    Raises RuntimeError if the variable is not set, preventing the application
+    from starting with an insecure default.
+    """
+    salt = os.environb.get(b"MVM_APP_SALT")
+    if not salt:
+        raise RuntimeError(
+            "MVM_APP_SALT environment variable is not set. "
+            "Please configure a securely stored secret before starting the application."
+        )
+    return salt
+
+
+_APP_SALT: bytes = _load_app_salt()
 
 
 class PrivacyManager:

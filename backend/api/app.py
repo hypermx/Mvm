@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Any
 
+import numpy as np
+import torch
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -55,10 +58,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+_raw_origins = os.environ.get("ALLOWED_ORIGINS", "")
+_allowed_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()] or ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=_allowed_origins,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -114,9 +120,6 @@ def get_vulnerability(user_id: str) -> VulnerabilityState:
             confidence=0.0,
         )
     adapter = _get_adapter(user_id)
-    import torch
-    import numpy as np
-
     features = np.stack(
         [_ingestion.normalize_features(_ingestion.handle_missing_data(lg)) for lg in logs[-7:]]
     )

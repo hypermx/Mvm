@@ -19,7 +19,7 @@ class NeuralStateSpaceModel(nn.Module):
         latent_dim: Dimensionality of the latent vulnerability state.
     """
 
-    def __init__(self, input_dim: int, hidden_dim: int, latent_dim: int) -> None:
+    def __init__(self, input_dim: int, hidden_dim: int, latent_dim: int, dropout_p: float = 0.1) -> None:
         super().__init__()
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
@@ -27,6 +27,7 @@ class NeuralStateSpaceModel(nn.Module):
 
         self.gru = nn.GRU(input_size=input_dim, hidden_size=hidden_dim, batch_first=True)
         self.encoder_proj = nn.Linear(hidden_dim, latent_dim)
+        self.dropout = nn.Dropout(p=dropout_p)
         self.vulnerability_head = nn.Sequential(
             nn.Linear(latent_dim, 1),
             nn.Sigmoid(),
@@ -51,6 +52,7 @@ class NeuralStateSpaceModel(nn.Module):
         """
         hidden_seq, _ = self.gru(x)                        # (B, T, H)
         latent = torch.tanh(self.encoder_proj(hidden_seq))  # (B, T, L)
+        latent = self.dropout(latent)                       # MC-dropout during training
         vuln = self.vulnerability_head(latent)              # (B, T, 1)
         tau = torch.clamp(self.temperature, min=1e-3)
         probs = torch.sigmoid((vuln - self.threshold) / tau)
@@ -71,4 +73,5 @@ class NeuralStateSpaceModel(nn.Module):
         """
         hidden_seq, _ = self.gru(x)
         latent = torch.tanh(self.encoder_proj(hidden_seq))
+        latent = self.dropout(latent)
         return latent[:, -1, :]   # last step
