@@ -39,16 +39,25 @@ export default function Home() {
       <header>
         <h1>M<span>VM</span></h1>
         <div>
-          <div style={{ fontWeight: 600 }}>Migraine Vulnerability Modeling</div>
+          <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>Migraine Vulnerability Modeling</div>
           <div className="tagline">Threshold-crossing latent state-space model</div>
         </div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
-            {session?.user?.email}
-          </span>
+          {session?.user?.email && (
+            <span style={{
+              color: "var(--text-muted)",
+              fontSize: "0.8rem",
+              background: "rgba(124,106,247,0.08)",
+              border: "1px solid var(--border-accent)",
+              borderRadius: "20px",
+              padding: "0.25rem 0.75rem",
+            }}>
+              {session.user.email}
+            </span>
+          )}
           <button
             className="primary"
-            style={{ marginTop: 0, padding: "0.3rem 0.9rem", fontSize: "0.8rem" }}
+            style={{ marginTop: 0, padding: "0.35rem 1rem", fontSize: "0.8rem" }}
             onClick={() => signOut({ callbackUrl: "/login" })}
           >
             Sign out

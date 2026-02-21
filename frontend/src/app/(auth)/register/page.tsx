@@ -55,15 +55,9 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="card" style={{ width: "100%", maxWidth: 420, margin: 0 }}>
-      <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-        <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>
-          M<span style={{ color: "var(--accent)" }}>VM</span>
-        </h1>
-        <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginTop: "0.25rem" }}>
-          Create your account
-        </p>
-      </div>
+    <div className="auth-card" style={{ maxWidth: 420 }}>
+      <div className="auth-logo">M<span>VM</span></div>
+      <p className="auth-subtitle">Create your account</p>
 
       {error && <div className="alert error">{error}</div>}
 
@@ -87,10 +81,10 @@ export default function RegisterPage() {
             onChange={(e) => setUserId(e.target.value)}
             placeholder="e.g. user_001"
             required
-            pattern="[A-Za-z0-9_-]+"
-            title="Letters, numbers, underscores and hyphens only"
+            pattern="[A-Za-z0-9_]+"
+            title="Letters, numbers and underscores only"
           />
-          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+          <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
             Used to link your data and personal model
           </span>
         </div>
@@ -105,7 +99,7 @@ export default function RegisterPage() {
             autoComplete="new-password"
           />
         </div>
-        <div className="field" style={{ marginBottom: "1.25rem" }}>
+        <div className="field" style={{ marginBottom: "1.5rem" }}>
           <label>Confirm Password</label>
           <input
             type="password"
@@ -121,9 +115,9 @@ export default function RegisterPage() {
         </button>
       </form>
 
-      <p style={{ textAlign: "center", marginTop: "1.25rem", fontSize: "0.875rem", color: "var(--text-muted)" }}>
+      <p style={{ textAlign: "center", marginTop: "1.5rem", fontSize: "0.875rem", color: "var(--text-muted)" }}>
         Already have an account?{" "}
-        <Link href="/login" style={{ color: "var(--accent)" }}>
+        <Link href="/login" style={{ color: "var(--accent-light)", fontWeight: 500 }}>
           Sign in
         </Link>
       </p>

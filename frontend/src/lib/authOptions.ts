@@ -32,21 +32,28 @@ export async function registerUser(
   if (credentialStore.has(email)) {
     return { ok: false, error: "Email already registered" };
   }
-  // Mirror the user in the backend so the ML pipeline can track them
-  const res = await fetch(`${BACKEND}/users`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      user_id: userId,
-      age: DEFAULT_AGE,
-      sex: DEFAULT_SEX,
-      migraine_history_years: 0,
-      average_migraine_frequency: 0,
-    }),
-  });
-  // 409 = already exists in backend, which is fine
-  if (!res.ok && res.status !== 409) {
-    return { ok: false, error: "Failed to create user profile" };
+  // Mirror the user in the backend so the ML pipeline can track them.
+  // If the backend is temporarily unreachable we proceed anyway — the
+  // profile will be created on first authenticated API request.
+  try {
+    const res = await fetch(`${BACKEND}/users`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: userId,
+        age: DEFAULT_AGE,
+        sex: DEFAULT_SEX,
+        migraine_history_years: 0,
+        average_migraine_frequency: 0,
+      }),
+    });
+    // 409 = already exists in backend, which is fine
+    if (!res.ok && res.status !== 409) {
+      console.warn(`[MVM] Backend user creation returned ${res.status} for ${userId}`);
+    }
+  } catch (err) {
+    // Backend unreachable — log and continue; profile syncs on next request
+    console.warn("[MVM] Could not reach backend during registration:", err);
   }
   const hash = await bcrypt.hash(password, 12);
   credentialStore.set(email, { userId, hash });

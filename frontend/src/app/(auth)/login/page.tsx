@@ -30,15 +30,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="card" style={{ width: "100%", maxWidth: 400, margin: 0 }}>
-      <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-        <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>
-          M<span style={{ color: "var(--accent)" }}>VM</span>
-        </h1>
-        <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginTop: "0.25rem" }}>
-          Sign in to your account
-        </p>
-      </div>
+    <div className="auth-card" style={{ maxWidth: 400 }}>
+      <div className="auth-logo">M<span>VM</span></div>
+      <p className="auth-subtitle">Sign in to your account</p>
 
       {error && <div className="alert error">{error}</div>}
 
@@ -54,7 +48,7 @@ export default function LoginPage() {
             autoComplete="email"
           />
         </div>
-        <div className="field" style={{ marginBottom: "1.25rem" }}>
+        <div className="field" style={{ marginBottom: "1.5rem" }}>
           <label>Password</label>
           <input
             type="password"
@@ -70,9 +64,9 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <p style={{ textAlign: "center", marginTop: "1.25rem", fontSize: "0.875rem", color: "var(--text-muted)" }}>
+      <p style={{ textAlign: "center", marginTop: "1.5rem", fontSize: "0.875rem", color: "var(--text-muted)" }}>
         No account?{" "}
-        <Link href="/register" style={{ color: "var(--accent)" }}>
+        <Link href="/register" style={{ color: "var(--accent-light)", fontWeight: 500 }}>
           Register
         </Link>
       </p>
