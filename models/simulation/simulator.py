@@ -109,7 +109,7 @@ class CounterfactualSimulator:
         weights = np.array([0.3, 0.2, 0.15, 0.1, 0.1, 0.05, 0.05, 0.05])
         w = weights[: features.shape[1]]
         w = w / w.sum()
-        base_score = float(features @ w)
+        base_score = float(np.mean(features @ w))
         rng = np.random.default_rng(42)
         trajectories = [
             [float(np.clip(base_score + rng.normal(0, 0.05), 0.0, 1.0)) for _ in range(len(features))]

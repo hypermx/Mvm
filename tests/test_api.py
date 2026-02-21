@@ -1,29 +1,54 @@
 """Tests for the FastAPI backend."""
 from __future__ import annotations
 
-from datetime import date
-
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
-from backend.api.app import app, _user_profiles, _user_logs, _adapters
+from backend.api.app import app, _adapters
+from backend.db.orm_models import Base
+from backend.db.session import get_db
 
-
-@pytest.fixture(autouse=True)
-def clear_state():
-    """Reset in-memory state between tests."""
-    _user_profiles.clear()
-    _user_logs.clear()
-    _adapters.clear()
-    yield
-    _user_profiles.clear()
-    _user_logs.clear()
-    _adapters.clear()
+_TEST_DATABASE_URL = "sqlite://"  # in-memory SQLite
 
 
 @pytest.fixture()
-def client() -> TestClient:
-    return TestClient(app)
+def db_session():
+    """Create a fresh in-memory SQLite database for each test.
+
+    StaticPool ensures every connection shares the same in-memory database
+    so that tables created by create_all are visible within the same test.
+    """
+    engine = create_engine(
+        _TEST_DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(bind=engine)
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    session = TestingSessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
+        Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture()
+def client(db_session):
+    """TestClient wired to the in-memory test database."""
+    _adapters.clear()
+
+    def override_get_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()
+    _adapters.clear()
 
 
 @pytest.fixture()

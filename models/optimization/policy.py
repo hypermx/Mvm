@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
-from scipy.optimize import minimize
 
 from backend.data_schema.models import DailyLog, InterventionSuggestion, UserProfile
 from backend.ingestion.ingestion import DataIngestionPipeline

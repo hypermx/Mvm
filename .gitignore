@@ -33,3 +33,6 @@ Thumbs.db
 
 # Environment / secrets
 .env
+
+# SQLite dev database
+mvm_dev.db

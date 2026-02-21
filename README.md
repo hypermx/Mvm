@@ -63,7 +63,7 @@ requirements.txt  pip-installable dependency list
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/Mvm.git
+git clone https://github.com/hypermx/Mvm.git
 cd Mvm
 
 # Create and activate a virtual environment (recommended)
