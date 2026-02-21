@@ -5,6 +5,9 @@ backend/api/__init__.py
 backend/api/app.py
 backend/data_schema/__init__.py
 backend/data_schema/models.py
+backend/db/__init__.py
+backend/db/orm_models.py
+backend/db/session.py
 backend/ingestion/__init__.py
 backend/ingestion/ingestion.py
 backend/privacy/__init__.py

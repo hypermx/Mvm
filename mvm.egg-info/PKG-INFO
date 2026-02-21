@@ -16,6 +16,8 @@ Requires-Dist: pandas>=2.2.0
 Requires-Dist: scipy>=1.13.0
 Requires-Dist: httpx>=0.27.0
 Requires-Dist: matplotlib>=3.8.0
+Requires-Dist: sqlalchemy>=2.0.0
+Requires-Dist: psycopg2-binary>=2.9.0
 Provides-Extra: dev
 Requires-Dist: ruff; extra == "dev"
 Requires-Dist: mypy; extra == "dev"
