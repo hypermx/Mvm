@@ -37,6 +37,8 @@ services:
     restart: unless-stopped
     environment:
       BACKEND_URL: http://backend:8000
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?Set NEXTAUTH_SECRET in .env}
     ports:
       - "3000:3000"
     depends_on:

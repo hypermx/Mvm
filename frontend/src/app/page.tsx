@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useSession, signOut } from "next-auth/react";
 import Dashboard from "@/components/Dashboard";
 import LogForm from "@/components/LogForm";
 import Simulate from "@/components/Simulate";
 import Interventions from "@/components/Interventions";
-import { getUser, createUser } from "@/lib/api";
 
 type Section = "dashboard" | "log" | "simulate" | "interventions";
 
@@ -15,9 +15,10 @@ interface AlertState {
 }
 
 export default function Home() {
+  const { data: session } = useSession();
+  const userId = (session?.user as { userId?: string })?.userId ?? "";
+
   const [section, setSection] = useState<Section>("dashboard");
-  const [userId, setUserId] = useState("user_001");
-  const [userStatus, setUserStatus] = useState("");
   const [alert, setAlert] = useState<AlertState | null>(null);
   const [logCount, setLogCount] = useState(0);
 
@@ -25,25 +26,6 @@ export default function Home() {
     setAlert({ msg, type });
     setTimeout(() => setAlert(null), 4000);
   }, []);
-
-  async function ensureUser() {
-    const id = userId.trim();
-    if (!id) { showAlert("Enter a user ID first.", "error"); return; }
-
-    const res = await getUser(id);
-    if (res.ok) {
-      setUserStatus(`✓ Connected as ${id}`);
-      showAlert(`Connected as "${id}".`);
-    } else {
-      const createRes = await createUser(id);
-      if (createRes.ok) {
-        setUserStatus(`✓ Created "${id}"`);
-        showAlert(`User "${id}" created.`);
-      } else {
-        showAlert("Failed to create user.", "error");
-      }
-    }
-  }
 
   const navItems: { id: Section; label: string }[] = [
     { id: "dashboard", label: "Dashboard" },
@@ -60,6 +42,18 @@ export default function Home() {
           <div style={{ fontWeight: 600 }}>Migraine Vulnerability Modeling</div>
           <div className="tagline">Threshold-crossing latent state-space model</div>
         </div>
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
+            {session?.user?.email}
+          </span>
+          <button
+            className="primary"
+            style={{ marginTop: 0, padding: "0.3rem 0.9rem", fontSize: "0.8rem" }}
+            onClick={() => signOut({ callbackUrl: "/login" })}
+          >
+            Sign out
+          </button>
+        </div>
       </header>
 
       <nav>
@@ -75,20 +69,6 @@ export default function Home() {
       </nav>
 
       <main>
-        <div className="user-bar">
-          <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>User ID:</span>
-          <input
-            type="text"
-            placeholder="e.g. user_001"
-            value={userId}
-            onChange={(e) => setUserId(e.target.value)}
-          />
-          <button className="primary" style={{ marginTop: 0 }} onClick={ensureUser}>
-            Connect
-          </button>
-          <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>{userStatus}</span>
-        </div>
-
         {alert && <div className={`alert ${alert.type}`}>{alert.msg}</div>}
 
         {section === "dashboard" && (
