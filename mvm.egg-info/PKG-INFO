@@ -1,3 +1,28 @@
+Metadata-Version: 2.4
+Name: mvm
+Version: 0.1.0
+Summary: Migraine Vulnerability Modeling: threshold-crossing latent state-space model
+License: MIT
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: fastapi>=0.111.0
+Requires-Dist: uvicorn[standard]>=0.29.0
+Requires-Dist: pydantic>=2.7.0
+Requires-Dist: numpy>=1.26.0
+Requires-Dist: scikit-learn>=1.4.0
+Requires-Dist: torch>=2.2.0
+Requires-Dist: cryptography>=42.0.0
+Requires-Dist: pandas>=2.2.0
+Requires-Dist: scipy>=1.13.0
+Requires-Dist: httpx>=0.27.0
+Requires-Dist: pytest>=8.2.0
+Requires-Dist: pytest-asyncio>=0.23.0
+Requires-Dist: matplotlib>=3.8.0
+Provides-Extra: dev
+Requires-Dist: ruff; extra == "dev"
+Requires-Dist: mypy; extra == "dev"
+Requires-Dist: pytest-cov; extra == "dev"
+
 # MVM – Migraine Vulnerability Modeling
 
 > Model migraines as threshold crossings of a continuously evolving latent vulnerability state.
