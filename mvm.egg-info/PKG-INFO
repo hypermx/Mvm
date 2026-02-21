@@ -1,0 +1,190 @@
+Metadata-Version: 2.4
+Name: mvm
+Version: 0.1.0
+Summary: Migraine Vulnerability Modeling: threshold-crossing latent state-space model
+License: MIT
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: fastapi>=0.111.0
+Requires-Dist: uvicorn[standard]>=0.29.0
+Requires-Dist: pydantic>=2.7.0
+Requires-Dist: numpy>=1.26.0
+Requires-Dist: scikit-learn>=1.4.0
+Requires-Dist: torch>=2.2.0
+Requires-Dist: cryptography>=42.0.0
+Requires-Dist: pandas>=2.2.0
+Requires-Dist: scipy>=1.13.0
+Requires-Dist: httpx>=0.27.0
+Requires-Dist: matplotlib>=3.8.0
+Requires-Dist: sqlalchemy>=2.0.0
+Requires-Dist: psycopg2-binary>=2.9.0
+Provides-Extra: dev
+Requires-Dist: ruff; extra == "dev"
+Requires-Dist: mypy; extra == "dev"
+Requires-Dist: pytest-cov; extra == "dev"
+Requires-Dist: pytest>=8.2.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.23.0; extra == "dev"
+
+# MVM – Migraine Vulnerability Modeling
+
+> Model migraines as threshold crossings of a continuously evolving latent vulnerability state.
+
+---
+
+## Conceptual Model
+
+Migraines do not occur in isolation—they emerge when accumulated physiological and behavioural load crosses a personal threshold.  MVM formalises this intuition as a neural state-space model:
+
+```
+v_{t+1} = f(v_t, x_t)          # latent vulnerability evolves over time
+migraine_t = 1  if  v_t > θ    # migraine when threshold is crossed
+```
+
+where  
+- `v_t` is the latent vulnerability score ∈ [0, 1]  
+- `x_t` is the day's feature vector (sleep, stress, hydration, caffeine, …)  
+- `θ` is a learnable personal threshold  
+
+---
+
+## Architecture
+
+MVM has four conceptual layers:
+
+| Layer | Description |
+|---|---|
+| **Foundation model** | GRU-based state-space model pre-trained on pooled population data |
+| **Personal adapter** | Lightweight per-user fine-tuning layer + personal threshold parameter |
+| **Simulation engine** | Monte-Carlo counterfactual rollouts ("what if I slept 2 h more?") |
+| **Policy optimiser** | Constrained optimisation returning ranked lifestyle interventions |
+
+---
+
+## Repository Structure
+
+```
+/backend
+  /api            FastAPI REST endpoints
+  /data_schema    Pydantic request/response models
+  /ingestion      Validation, imputation, normalisation pipeline
+  /privacy        Fernet encryption & anonymisation utilities
+/models
+  /foundation     NeuralStateSpaceModel (GRU + latent projection)
+  /personal       PersonalAdapter (per-user fine-tuning)
+  /simulation     CounterfactualSimulator (MC-dropout rollouts)
+  /optimization   InterventionOptimizer (constrained suggestions)
+  baseline.py     Logistic regression + gradient boosting baselines
+/training
+  /pretraining    Pre-train foundation model on pooled DataLoader
+  /fine_tuning    Fine-tune personal adapter on individual logs
+  /evaluation     Metrics, calibration curves, trajectory plots
+/tests            pytest test suite (schema, ingestion, privacy, models, API)
+/docs             Additional documentation
+pyproject.toml    Project metadata and dependencies
+requirements.txt  pip-installable dependency list
+```
+
+---
+
+## Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/hypermx/Mvm.git
+cd Mvm
+
+# Create and activate a virtual environment (recommended)
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+
+# Install in editable mode (includes all dependencies)
+pip install -e .
+```
+
+---
+
+## Quick Start
+
+```python
+from datetime import date
+from backend.data_schema.models import DailyLog, UserProfile
+from backend.ingestion.ingestion import DataIngestionPipeline
+from models.foundation.model import NeuralStateSpaceModel
+from models.personal.adapter import PersonalAdapter
+from models.simulation.simulator import CounterfactualSimulator
+
+# 1. Build a daily log
+log = DailyLog(
+    date=date.today(),
+    sleep_hours=6.5,
+    sleep_quality=5.0,
+    stress_level=7.0,
+    hydration_liters=1.5,
+    caffeine_mg=200.0,
+    migraine_occurred=False,
+)
+
+# 2. Ingest (validate + normalise)
+pipeline = DataIngestionPipeline()
+result = pipeline.ingest_daily_log(log, user_id="alice")
+print(result["normalized_features"])
+
+# 3. Personal model inference
+foundation = NeuralStateSpaceModel(input_dim=8, hidden_dim=64, latent_dim=32)
+adapter = PersonalAdapter(foundation, user_id="alice")
+
+import torch
+features = torch.tensor(result["normalized_features"]).unsqueeze(0).unsqueeze(0)
+vuln, prob = adapter(features)
+print(f"Vulnerability: {vuln.item():.3f}  |  Migraine probability: {prob.item():.3f}")
+
+# 4. Counterfactual simulation
+simulator = CounterfactualSimulator()
+sim_result = simulator.simulate(
+    baseline_logs=[log],
+    modifications={"sleep_hours": 9.0, "stress_level": 3.0},
+    model=adapter,
+)
+print(sim_result)
+```
+
+### Running the API server
+
+```bash
+uvicorn backend.api.app:app --reload
+# Visit http://localhost:8000/docs for the interactive Swagger UI
+```
+
+### Running tests
+
+```bash
+pytest tests/ -v
+```
+
+---
+
+## API Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/users` | Create user profile |
+| `GET` | `/users/{user_id}` | Retrieve user profile |
+| `POST` | `/logs/{user_id}` | Submit a daily health log |
+| `GET` | `/vulnerability/{user_id}` | Current vulnerability score |
+| `POST` | `/simulate/{user_id}` | Run a counterfactual simulation |
+| `GET` | `/interventions/{user_id}` | Get ranked intervention suggestions |
+
+---
+
+## Contributing
+
+1. Fork the repository and create a feature branch.
+2. Install dev extras: `pip install -e ".[dev]"`
+3. Run `pytest tests/ -v` and ensure all tests pass.
+4. Open a pull request with a clear description of your changes.
+
+---
+
+## Disclaimer
+
+MVM is a research prototype.  It is **not** a medical device and should **not** be used as a substitute for professional medical advice, diagnosis, or treatment.  Always consult a qualified healthcare provider about migraine management.
