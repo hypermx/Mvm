@@ -1,22 +1,45 @@
-# MVM – Migraine Vulnerability Modeling
+# Migraine Vulnerability Modeling (MVM)
 
-> Model migraines as threshold crossings of a continuously evolving latent vulnerability state.
+An open-source project to model migraines as **threshold crossings of a continuously evolving latent vulnerability state**, rather than isolated trigger events.
+
+The goal is to build a scientifically grounded, privacy-conscious, extensible system that helps users understand and stabilize neurological vulnerability over time.
+
+This project is in active development. Contributions are welcome.
 
 ---
 
 ## Conceptual Model
 
-Migraines do not occur in isolation—they emerge when accumulated physiological and behavioural load crosses a personal threshold.  MVM formalises this intuition as a neural state-space model:
+Instead of asking:
+
+> "What caused my migraine?"
+
+We model:
+
+* A latent continuous vulnerability state `v_t`
+* Evolving over time based on physiological and behavioral inputs
+* Migraines occur when `v_t` crosses a learned threshold
 
 ```
 v_{t+1} = f(v_t, x_t)          # latent vulnerability evolves over time
 migraine_t = 1  if  v_t > θ    # migraine when threshold is crossed
 ```
 
-where  
-- `v_t` is the latent vulnerability score ∈ [0, 1]  
-- `x_t` is the day's feature vector (sleep, stress, hydration, caffeine, …)  
-- `θ` is a learnable personal threshold  
+where
+- `v_t` is the latent vulnerability score ∈ [0, 1]
+- `x_t` is the day's feature vector (sleep, stress, hydration, caffeine, …)
+- `θ` is a learnable personal threshold
+
+---
+
+## Project Goals
+
+* Learn a global representation of migraine dynamics from pooled data
+* Adapt models to individual users with minimal personal data
+* Enable counterfactual simulation ("What if I sleep 8 hours tonight?")
+* Provide constrained, safe intervention suggestions
+* Maintain strong privacy guarantees
+* Encourage interdisciplinary collaboration (ML, neuroscience, clinical insight)
 
 ---
 
@@ -149,12 +172,46 @@ pytest tests/ -v
 
 ---
 
+## Data & Privacy Principles
+
+Health data requires strong safeguards.
+
+* Encryption in transit and at rest
+* Clear anonymization pipeline
+* No silent data manipulation
+* Explicit missing-data handling
+* Transparent privacy documentation
+
+Future roadmap may include federated learning.
+
+---
+
+## Scientific Standards
+
+This is not a "trigger finder."
+
+All contributions should:
+
+* Include reproducible experiments
+* Compare against baseline models
+* Provide calibration metrics
+* Avoid causal claims unless justified
+* Include uncertainty estimates
+
+Pull requests that improve scientific validity are strongly encouraged.
+
+---
+
 ## Contributing
+
+We welcome pull requests, documentation improvements, benchmark contributions, and privacy/security review.
+
+Before submitting a PR:
 
 1. Fork the repository and create a feature branch.
 2. Install dev extras: `pip install -e ".[dev]"`
 3. Run `pytest tests/ -v` and ensure all tests pass.
-4. Open a pull request with a clear description of your changes.
+4. Open an issue describing the proposal, then open a pull request with a clear description of your changes and evaluation metrics.
 
 ---
 
