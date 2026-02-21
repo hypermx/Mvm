@@ -1,9 +1,5 @@
 from __future__ import annotations
 
-import numpy as np
-import torch
-import torch.nn as nn
-
 from backend.data_schema.models import DailyLog
 from models.personal.adapter import PersonalAdapter
 

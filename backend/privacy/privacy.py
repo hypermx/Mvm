@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 from typing import Any
 
 from cryptography.fernet import Fernet
@@ -29,9 +28,9 @@ class PrivacyManager:
             algorithm=hashes.SHA256(),
             length=32,
             salt=_APP_SALT,
-            # 480 000 iterations exceeds OWASP 2023 recommendation (210 000) by ~2×
-            # to provide a safety margin for future hardware improvements.
-            iterations=480_000,
+            # 600 000 iterations matches the OWASP 2023 recommendation for
+            # PBKDF2-HMAC-SHA256.
+            iterations=600_000,
         )
         raw_key = kdf.derive(user_id.encode())
         return base64.urlsafe_b64encode(raw_key)
