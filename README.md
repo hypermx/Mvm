@@ -1,2 +1,219 @@
-# Mvm
-Migraine vulnerability modeling
+# Migraine Vulnerability Modeling (MVM)
+
+An open-source project to model migraines as **threshold crossings of a continuously evolving latent vulnerability state**, rather than isolated trigger events.
+
+The goal is to build a scientifically grounded, privacy-conscious, extensible system that helps users understand and stabilize neurological vulnerability over time.
+
+This project is in active development. Contributions are welcome.
+
+---
+
+## Conceptual Overview
+
+Instead of asking:
+
+> “What caused my migraine?”
+
+We model:
+
+* A latent continuous vulnerability state `v_t`
+* Evolving over time based on physiological and behavioral inputs
+* Migraines occur when `v_t` crosses a learned threshold
+
+Formally:
+
+```
+v_{t+1} = f(v_t, x_t)
+migraine_t = 1 if v_t > θ
+```
+
+Where:
+
+* `x_t` = observed inputs (sleep, stress, hydration, nutrition, etc.)
+* `v_t` = latent vulnerability
+* `θ` = personal or global instability threshold
+
+This is implemented as a nonlinear neural state-space model with personalization and intervention simulation capabilities.
+
+---
+
+## Project Goals
+
+* Learn a global representation of migraine dynamics from pooled data
+* Adapt models to individual users with minimal personal data
+* Enable counterfactual simulation (“What if I sleep 8 hours tonight?”)
+* Provide constrained, safe intervention suggestions
+* Maintain strong privacy guarantees
+* Encourage interdisciplinary collaboration (ML, neuroscience, clinical insight)
+
+---
+
+## Architecture Overview
+
+### Layer 1 – Global Representation Model
+
+A neural state-space backbone (Transformer or TCN-based) that:
+
+* Learns temporal physiological dynamics
+* Produces a latent vulnerability state
+* Models smooth accumulation and recovery
+* Outputs calibrated migraine risk probabilities
+
+Pretraining includes self-supervised sequence learning.
+
+---
+
+### Layer 2 – Personal Adaptation
+
+Lightweight per-user adaptation using:
+
+* Adapter modules or LoRA-style updates
+* Personal threshold parameters
+* Regularization toward global priors
+
+Designed to prevent overfitting on small personal datasets.
+
+---
+
+### Layer 3 – Counterfactual Engine
+
+Differentiable forward simulation of vulnerability trajectories under hypothetical input sequences.
+
+Supports:
+
+* Multi-day simulation rollouts
+* Uncertainty propagation
+* Safe intervention constraints
+
+---
+
+### Layer 4 – Policy Optimization
+
+Constrained optimization (initially not RL) that:
+
+* Minimizes predicted threshold crossings
+* Respects realistic behavioral bounds
+* Outputs ranked intervention suggestions with uncertainty estimates
+
+---
+
+## Repository Structure (Planned)
+
+```
+/backend
+  /api
+  /data_schema
+  /ingestion
+  /privacy
+/models
+  /foundation
+  /personal
+  /simulation
+  /optimization
+/frontend
+  /dashboard
+  /logging
+  /simulation_ui
+/training
+  /pretraining
+  /fine_tuning
+  /evaluation
+/docs
+/tests
+```
+
+---
+
+## Current Scope (v1)
+
+To maintain rigor and stability, the first public version will:
+
+* Use daily time resolution
+* Support a limited, validated feature set (sleep, stress, hydration, etc.)
+* Include simple baseline models (logistic regression, gradient boosting)
+* Avoid medication adjustment recommendations
+* Focus on simulation and risk stabilization
+
+Complex extensions (e.g., menstrual cycle modeling, high-frequency data, reinforcement learning) will be added incrementally.
+
+---
+
+## Data & Privacy Principles
+
+Health data requires strong safeguards.
+
+* Encryption in transit and at rest
+* Clear anonymization pipeline
+* No silent data manipulation
+* Explicit missing-data handling
+* Transparent privacy documentation
+
+Future roadmap may include federated learning.
+
+---
+
+## Scientific Standards
+
+This is not a “trigger finder.”
+
+We aim to model physiological dynamics responsibly.
+
+All contributions should:
+
+* Include reproducible experiments
+* Compare against baseline models
+* Provide calibration metrics
+* Avoid causal claims unless justified
+* Include uncertainty estimates
+
+Pull requests that improve scientific validity are strongly encouraged.
+
+---
+
+## How to Contribute
+
+We welcome:
+
+* Pull requests (model improvements, infrastructure, UI, testing)
+* Documentation improvements
+* Benchmark contributions
+* Privacy and security review
+* Practical experience from:
+
+  * Neuroscience
+  * Headache medicine
+  * Behavioral science
+  * Control systems
+  * Causal inference
+  * Human-computer interaction
+
+If you have real-world migraine research or clinical experience, your input is especially valuable.
+
+Before submitting a PR:
+
+* Open an issue describing the proposal
+* Include reasoning and expected impact
+* Provide evaluation metrics
+* Add tests where applicable
+
+---
+
+## Disclaimer
+
+This project is for research and educational purposes only.
+
+It does not provide medical advice and should not replace consultation with a qualified healthcare professional.
+
+---
+
+## Long-Term Vision
+
+To build an open, privacy-respecting, scientifically grounded system that:
+
+* Models neurological vulnerability as a dynamic system
+* Enables personalized stabilization strategies
+* Bridges machine learning and neuroscience
+* Encourages interdisciplinary collaboration
+
+If you’re interested in contributing at any level—code, science, review, critique—we invite you to join.
+
