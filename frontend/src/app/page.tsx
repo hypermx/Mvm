@@ -26,7 +26,7 @@ function needsProfileSetup(profile: UserProfile): boolean {
 }
 
 export default function Home() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const userId = (session?.user as { userId?: string })?.userId ?? "";
 
   const [section, setSection] = useState<Section>("dashboard");
@@ -61,6 +61,18 @@ export default function Home() {
     { id: "interventions", label: "Interventions" },
   ];
 
+  if (status === "loading") {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ color: "var(--text-muted)", fontSize: "0.95rem" }}>Loading…</div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <LandingPage />;
+  }
+
   return (
     <>
       <header>
@@ -85,7 +97,7 @@ export default function Home() {
           <button
             className="primary"
             style={{ marginTop: 0, padding: "0.35rem 1rem", fontSize: "0.8rem" }}
-            onClick={() => signOut({ callbackUrl: "/login" })}
+            onClick={() => signOut({ callbackUrl: "/" })}
           >
             Sign out
           </button>
