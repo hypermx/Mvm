@@ -65,6 +65,18 @@ class UserProfile(BaseModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+class UserProfileUpdate(BaseModel):
+    """Partial update for a user profile."""
+
+    age: Optional[int] = Field(default=None, ge=0, le=120)
+    sex: Optional[str] = Field(default=None, pattern="^(male|female|other)$")
+    migraine_history_years: Optional[float] = Field(default=None, ge=0.0)
+    average_migraine_frequency: Optional[float] = Field(
+        default=None, ge=0.0, description="Migraines per month"
+    )
+    personal_threshold: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+
+
 class VulnerabilityState(BaseModel):
     """Snapshot of a user's current vulnerability score."""
 

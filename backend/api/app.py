@@ -15,6 +15,7 @@ from backend.data_schema.models import (
     InterventionSuggestion,
     SimulationInput,
     UserProfile,
+    UserProfileUpdate,
     VulnerabilityState,
 )
 from backend.db.orm_models import DailyLogORM, UserProfileORM
@@ -149,6 +150,26 @@ def create_user(profile: UserProfile, db: Session = Depends(get_db)) -> UserProf
 @app.get("/users/{user_id}", response_model=UserProfile)
 def get_user(user_id: str, db: Session = Depends(get_db)) -> UserProfile:
     row = _require_user(user_id, db)
+    return _orm_to_profile(row)
+
+
+@app.put("/users/{user_id}", response_model=UserProfile)
+def update_user(
+    user_id: str, update: UserProfileUpdate, db: Session = Depends(get_db)
+) -> UserProfile:
+    row = _require_user(user_id, db)
+    if update.age is not None:
+        row.age = update.age
+    if update.sex is not None:
+        row.sex = update.sex
+    if update.migraine_history_years is not None:
+        row.migraine_history_years = update.migraine_history_years
+    if update.average_migraine_frequency is not None:
+        row.average_migraine_frequency = update.average_migraine_frequency
+    if update.personal_threshold is not None:
+        row.personal_threshold = update.personal_threshold
+    db.commit()
+    db.refresh(row)
     return _orm_to_profile(row)
 
 

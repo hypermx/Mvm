@@ -98,6 +98,30 @@ class TestUsers:
         resp = client.get("/users/nobody")
         assert resp.status_code == 404
 
+    def test_update_user(self, client, created_user):
+        update = {"age": 35, "sex": "male", "migraine_history_years": 10.0}
+        resp = client.put("/users/api_test_user", json=update)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["age"] == 35
+        assert data["sex"] == "male"
+        assert data["migraine_history_years"] == 10.0
+        # Unchanged fields retain original values
+        assert data["average_migraine_frequency"] == 2.0
+
+    def test_update_user_partial(self, client, created_user):
+        resp = client.put("/users/api_test_user", json={"personal_threshold": 0.7})
+        assert resp.status_code == 200
+        assert resp.json()["personal_threshold"] == 0.7
+
+    def test_update_nonexistent_user(self, client):
+        resp = client.put("/users/nobody", json={"age": 25})
+        assert resp.status_code == 404
+
+    def test_update_user_invalid_sex(self, client, created_user):
+        resp = client.put("/users/api_test_user", json={"sex": "unknown"})
+        assert resp.status_code == 422
+
 
 class TestLogs:
     def test_submit_log(self, client, created_user):
