@@ -36,3 +36,8 @@ Thumbs.db
 
 # SQLite dev database
 mvm_dev.db
+
+# Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/next-env.d.ts
