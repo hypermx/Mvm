@@ -8,7 +8,7 @@ const BACKEND = process.env.BACKEND_URL ?? "http://localhost:8000";
 // Defaults used when creating a user profile in the backend at registration time.
 // These can be updated by the user later through the profile settings.
 const DEFAULT_AGE = 30;
-const DEFAULT_SEX = "unknown";
+const DEFAULT_SEX = "other";
 
 /**
  * Lightweight in-process credential store for the MVP.
