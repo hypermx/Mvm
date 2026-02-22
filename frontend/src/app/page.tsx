@@ -1,17 +1,28 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Dashboard from "@/components/Dashboard";
 import LogForm from "@/components/LogForm";
 import Simulate from "@/components/Simulate";
 import Interventions from "@/components/Interventions";
+import ProfileSetup from "@/components/ProfileSetup";
+import { getUser, UserProfile, NEW_USER_DEFAULTS } from "@/lib/api";
 
 type Section = "dashboard" | "log" | "simulate" | "interventions";
 
 interface AlertState {
   msg: string;
   type: "success" | "error";
+}
+
+function needsProfileSetup(profile: UserProfile): boolean {
+  return (
+    profile.migraine_history_years === NEW_USER_DEFAULTS.migraine_history_years &&
+    profile.average_migraine_frequency === NEW_USER_DEFAULTS.average_migraine_frequency &&
+    profile.sex === NEW_USER_DEFAULTS.sex &&
+    profile.age === NEW_USER_DEFAULTS.age
+  );
 }
 
 export default function Home() {
@@ -21,11 +32,27 @@ export default function Home() {
   const [section, setSection] = useState<Section>("dashboard");
   const [alert, setAlert] = useState<AlertState | null>(null);
   const [logCount, setLogCount] = useState(0);
+  const [showProfileSetup, setShowProfileSetup] = useState(false);
 
   const showAlert = useCallback((msg: string, type: "success" | "error" = "success") => {
     setAlert({ msg, type });
     setTimeout(() => setAlert(null), 4000);
   }, []);
+
+  // Check if new user needs to complete their profile
+  useEffect(() => {
+    if (!userId) return;
+    getUser(userId)
+      .then((res) => res.json())
+      .then((profile: UserProfile) => {
+        if (needsProfileSetup(profile)) {
+          setShowProfileSetup(true);
+        }
+      })
+      .catch(() => {
+        // If we can't fetch the profile, don't block the UI
+      });
+  }, [userId]);
 
   const navItems: { id: Section; label: string }[] = [
     { id: "dashboard", label: "Dashboard" },
@@ -65,38 +92,50 @@ export default function Home() {
         </div>
       </header>
 
-      <nav>
-        {navItems.map((item) => (
-          <button
-            key={item.id}
-            className={section === item.id ? "active" : ""}
-            onClick={() => setSection(item.id)}
-          >
-            {item.label}
-          </button>
-        ))}
-      </nav>
-
-      <main>
-        {alert && <div className={`alert ${alert.type}`}>{alert.msg}</div>}
-
-        {section === "dashboard" && (
-          <Dashboard userId={userId} logCount={logCount} onAlert={showAlert} />
-        )}
-        {section === "log" && (
-          <LogForm
+      {showProfileSetup ? (
+        <main>
+          <ProfileSetup
             userId={userId}
-            onAlert={showAlert}
-            onLogSubmitted={() => setLogCount((c) => c + 1)}
+            onComplete={() => setShowProfileSetup(false)}
           />
-        )}
-        {section === "simulate" && (
-          <Simulate userId={userId} onAlert={showAlert} />
-        )}
-        {section === "interventions" && (
-          <Interventions userId={userId} onAlert={showAlert} />
-        )}
-      </main>
+        </main>
+      ) : (
+        <>
+          <nav>
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                className={section === item.id ? "active" : ""}
+                onClick={() => setSection(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+
+          <main>
+            {alert && <div className={`alert ${alert.type}`}>{alert.msg}</div>}
+
+            {section === "dashboard" && (
+              <Dashboard userId={userId} logCount={logCount} onAlert={showAlert} />
+            )}
+            {section === "log" && (
+              <LogForm
+                userId={userId}
+                onAlert={showAlert}
+                onLogSubmitted={() => setLogCount((c) => c + 1)}
+              />
+            )}
+            {section === "simulate" && (
+              <Simulate userId={userId} onAlert={showAlert} />
+            )}
+            {section === "interventions" && (
+              <Interventions userId={userId} onAlert={showAlert} />
+            )}
+          </main>
+        </>
+      )}
     </>
   );
 }
+
