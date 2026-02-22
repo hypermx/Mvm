@@ -51,11 +51,50 @@ class TestDailyLog:
                 sleep_quality=5.0,
                 stress_level=5.0,
                 hydration_liters=2.0,
+                migraine_occurred=False,
+                migraine_intensity=0.0,
             )
 
     def test_optional_fields_default_none(self, sample_log):
         assert sample_log.menstrual_cycle_day is None
-        assert sample_log.migraine_intensity is None
+        assert sample_log.migraine_intensity == 0.0
+
+    def test_no_migraine_with_zero_intensity_valid(self):
+        """migraine_occurred=False with intensity == 0 is valid."""
+        log = DailyLog(
+            date=date(2024, 1, 1),
+            sleep_hours=7.0,
+            sleep_quality=7.0,
+            stress_level=2.0,
+            hydration_liters=2.0,
+            migraine_occurred=False,
+            migraine_intensity=0.0,
+        )
+        assert log.migraine_intensity == 0.0
+
+    def test_migraine_requires_nonzero_intensity(self):
+        """migraine_occurred=True with intensity == 0 is invalid."""
+        with pytest.raises(Exception):
+            DailyLog(
+                date=date(2024, 1, 1),
+                sleep_hours=7.0,
+                sleep_quality=7.0,
+                stress_level=2.0,
+                hydration_liters=2.0,
+                migraine_occurred=True,
+                migraine_intensity=0.0,
+            )
+
+    def test_migraine_fields_required(self):
+        """Omitting migraine_occurred or migraine_intensity raises."""
+        with pytest.raises(Exception):
+            DailyLog(
+                date=date(2024, 1, 1),
+                sleep_hours=7.0,
+                sleep_quality=7.0,
+                stress_level=2.0,
+                hydration_liters=2.0,
+            )
 
 
 class TestUserProfile:

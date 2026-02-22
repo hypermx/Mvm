@@ -3,11 +3,21 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 from typing import Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class DailyLog(BaseModel):
-    """Daily health log submitted by a user."""
+    """Daily health log submitted by a user.
+
+    Migraine semantics:
+    - Both ``migraine_occurred`` and ``migraine_intensity`` are **required**.
+    - If no migraine happened, supply ``migraine_occurred=False`` and
+      ``migraine_intensity=0``.
+    - If a migraine happened, supply ``migraine_occurred=True`` and an
+      intensity in the range (0, 10].
+    - ``migraine_occurred=False`` with ``migraine_intensity > 0`` is invalid.
+    - ``migraine_occurred=True`` with ``migraine_intensity == 0`` is invalid.
+    """
 
     date: date
     sleep_hours: float = Field(..., ge=0.0, le=24.0)
@@ -19,19 +29,27 @@ class DailyLog(BaseModel):
     exercise_minutes: float = Field(default=0.0, ge=0.0)
     weather_pressure_hpa: Optional[float] = Field(default=None, ge=800.0, le=1100.0)
     menstrual_cycle_day: Optional[int] = Field(default=None, ge=1, le=35)
-    migraine_occurred: bool = False
-    migraine_intensity: Optional[float] = Field(default=None, ge=0.0, le=10.0)
+    migraine_occurred: bool
+    migraine_intensity: float = Field(..., ge=0.0, le=10.0)
 
-    @field_validator("migraine_intensity")
-    @classmethod
-    def intensity_requires_migraine(cls, v: Optional[float], info) -> Optional[float]:
-        if v is not None and v > 0:
-            data = info.data
-            if not data.get("migraine_occurred", False):
-                raise ValueError(
-                    "migraine_intensity can only be set when migraine_occurred is True"
-                )
-        return v
+    @model_validator(mode="after")
+    def validate_migraine_consistency(self) -> "DailyLog":
+        """Enforce that intensity and occurrence are mutually consistent.
+
+        - ``migraine_occurred=False`` requires ``migraine_intensity == 0``.
+        - ``migraine_occurred=True`` requires ``migraine_intensity > 0``.
+        """
+        # Use a small tolerance to avoid floating-point precision pitfalls.
+        intensity_is_zero = self.migraine_intensity < 1e-9
+        if not self.migraine_occurred and not intensity_is_zero:
+            raise ValueError(
+                "migraine_intensity must be 0 when migraine_occurred is False"
+            )
+        if self.migraine_occurred and intensity_is_zero:
+            raise ValueError(
+                "migraine_intensity must be > 0 when migraine_occurred is True"
+            )
+        return self
 
 
 class UserProfile(BaseModel):

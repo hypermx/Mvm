@@ -54,7 +54,7 @@ class DailyLogORM(Base):
     exercise_minutes: Mapped[float] = mapped_column(Float, default=0.0)
     weather_pressure_hpa: Mapped[float | None] = mapped_column(Float, nullable=True)
     menstrual_cycle_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    migraine_occurred: Mapped[bool] = mapped_column(Boolean, default=False)
-    migraine_intensity: Mapped[float | None] = mapped_column(Float, nullable=True)
+    migraine_occurred: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    migraine_intensity: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
 
     user: Mapped[UserProfileORM] = relationship("UserProfileORM", back_populates="logs")

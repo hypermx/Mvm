@@ -40,6 +40,8 @@ class TestDataIngestionPipeline:
             stress_level=4.0,
             hydration_liters=2.0,
             weather_pressure_hpa=None,
+            migraine_occurred=False,
+            migraine_intensity=0.0,
         )
         filled = pipeline.handle_missing_data(log)
         assert filled.weather_pressure_hpa is not None
@@ -56,11 +58,14 @@ class TestDataIngestionPipeline:
             sleep_quality=3.0,
             stress_level=5.0,
             hydration_liters=2.0,
+            migraine_occurred=False,
+            migraine_intensity=0.0,
         )
         warnings = pipeline.validate_log(log)
         assert any("sleep" in w.lower() for w in warnings)
 
-    def test_validate_log_migraine_without_intensity(self, pipeline):
+    def test_validate_log_migraine_with_intensity(self, pipeline):
+        """A valid migraine log (occurred=True, intensity>0) produces no intensity warning."""
         from datetime import date
         log = DailyLog(
             date=date(2024, 1, 1),
@@ -69,9 +74,10 @@ class TestDataIngestionPipeline:
             stress_level=8.0,
             hydration_liters=1.5,
             migraine_occurred=True,
+            migraine_intensity=7.0,
         )
         warnings = pipeline.validate_log(log)
-        assert any("intensity" in w.lower() for w in warnings)
+        assert not any("intensity" in w.lower() for w in warnings)
 
     def test_high_caffeine_warning(self, pipeline):
         from datetime import date
@@ -82,6 +88,8 @@ class TestDataIngestionPipeline:
             stress_level=5.0,
             hydration_liters=2.0,
             caffeine_mg=700.0,
+            migraine_occurred=False,
+            migraine_intensity=0.0,
         )
         warnings = pipeline.validate_log(log)
         assert any("caffeine" in w.lower() for w in warnings)

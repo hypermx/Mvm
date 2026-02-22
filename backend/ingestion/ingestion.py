@@ -83,9 +83,6 @@ class DataIngestionPipeline:
         if log.alcohol_units > 6.0:
             warnings.append(f"High alcohol intake ({log.alcohol_units:.1f} units).")
 
-        if log.migraine_occurred and log.migraine_intensity is None:
-            warnings.append("Migraine occurred but intensity not recorded.")
-
         return warnings
 
     def normalize_features(self, log: DailyLog) -> np.ndarray:
