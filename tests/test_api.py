@@ -111,6 +111,7 @@ class TestLogs:
             "alcohol_units": 0.0,
             "exercise_minutes": 30.0,
             "migraine_occurred": False,
+            "migraine_intensity": 0.0,
         }
         resp = client.post("/logs/api_test_user", json=log_payload)
         assert resp.status_code == 201
@@ -125,6 +126,7 @@ class TestLogs:
             "stress_level": 4.0,
             "hydration_liters": 2.0,
             "migraine_occurred": False,
+            "migraine_intensity": 0.0,
         }
         resp = client.post("/logs/ghost_user", json=log_payload)
         assert resp.status_code == 404
@@ -146,6 +148,7 @@ class TestVulnerability:
             "stress_level": 4.0,
             "hydration_liters": 2.0,
             "migraine_occurred": False,
+            "migraine_intensity": 0.0,
         }
         client.post("/logs/api_test_user", json=log_payload)
         resp = client.get("/vulnerability/api_test_user")
@@ -166,6 +169,7 @@ class TestSimulation:
                     "stress_level": 7.0,
                     "hydration_liters": 1.5,
                     "migraine_occurred": False,
+                    "migraine_intensity": 0.0,
                 }
             ],
             "hypothetical_modifications": {"sleep_hours": 9.0},

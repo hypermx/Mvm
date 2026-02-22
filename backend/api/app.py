@@ -97,6 +97,14 @@ def _orm_to_profile(row: UserProfileORM) -> UserProfile:
 
 
 def _orm_to_log(row: DailyLogORM) -> DailyLog:
+    # migraine_intensity may be NULL in rows written before this schema change;
+    # default to 0.0 so existing data loads without error.
+    intensity = row.migraine_intensity if row.migraine_intensity is not None else 0.0
+    occurred = bool(row.migraine_occurred)
+    # Legacy rows with occurred=True but NULL intensity: clamp intensity to 1.0
+    # so the cross-field invariant (occurred=True => intensity > 0) is satisfied.
+    if occurred and intensity == 0.0:
+        intensity = 1.0
     return DailyLog(
         date=row.date,
         sleep_hours=row.sleep_hours,
@@ -108,8 +116,8 @@ def _orm_to_log(row: DailyLogORM) -> DailyLog:
         exercise_minutes=row.exercise_minutes,
         weather_pressure_hpa=row.weather_pressure_hpa,
         menstrual_cycle_day=row.menstrual_cycle_day,
-        migraine_occurred=row.migraine_occurred,
-        migraine_intensity=row.migraine_intensity,
+        migraine_occurred=occurred,
+        migraine_intensity=intensity,
     )
 
 

@@ -29,6 +29,7 @@ def sample_log() -> DailyLog:
         exercise_minutes=30.0,
         weather_pressure_hpa=1013.0,
         migraine_occurred=False,
+        migraine_intensity=0.0,
     )
 
 
