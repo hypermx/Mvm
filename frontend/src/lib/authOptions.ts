@@ -1,5 +1,6 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 
 const BACKEND = process.env.BACKEND_URL ?? "http://localhost:8000";
@@ -24,24 +25,24 @@ export const credentialStore = new Map<
   { userId: string; hash: string }
 >();
 
-export async function registerUser(
-  email: string,
-  password: string
-): Promise<{ ok: boolean; userId?: string; error?: string }> {
-  if (credentialStore.has(email)) {
-    return { ok: false, error: "Email already registered" };
-  }
-  // Derive a readable prefix from the email local part, then append a
-  // UUID-based suffix to guarantee global uniqueness.
+/**
+ * Tracks Google-authenticated users (email → userId).
+ * Populated on first sign-in via Google.
+ * Same MVP limitations as credentialStore above.
+ */
+export const googleUserStore = new Map<string, string>();
+
+/** Generates a unique userId from an email address. */
+function generateUserId(email: string): string {
   const atIndex = email.indexOf("@");
   const localPart = (atIndex > 0 ? email.slice(0, atIndex) : email)
     .replace(/[^A-Za-z0-9]/g, "_")
     .slice(0, 20);
-  const userId = `${localPart}_${crypto.randomUUID().replace(/-/g, "").slice(0, 8)}`;
+  return `${localPart}_${crypto.randomUUID().replace(/-/g, "").slice(0, 8)}`;
+}
 
-  // Mirror the user in the backend so the ML pipeline can track them.
-  // If the backend is temporarily unreachable we proceed anyway — the
-  // profile will be created on first authenticated API request.
+/** Creates the user profile in the backend ML pipeline. */
+async function createBackendUser(userId: string): Promise<void> {
   try {
     const res = await fetch(`${BACKEND}/users`, {
       method: "POST",
@@ -54,14 +55,23 @@ export async function registerUser(
         average_migraine_frequency: 0,
       }),
     });
-    // 409 = already exists in backend, which is fine
     if (!res.ok && res.status !== 409) {
       console.warn(`[MVM] Backend user creation returned ${res.status} for ${userId}`);
     }
   } catch (err) {
-    // Backend unreachable — log and continue; profile syncs on next request
     console.warn("[MVM] Could not reach backend during registration:", err);
   }
+}
+
+export async function registerUser(
+  email: string,
+  password: string
+): Promise<{ ok: boolean; userId?: string; error?: string }> {
+  if (credentialStore.has(email)) {
+    return { ok: false, error: "Email already registered" };
+  }
+  const userId = generateUserId(email);
+  await createBackendUser(userId);
   const hash = await bcrypt.hash(password, 12);
   credentialStore.set(email, { userId, hash });
   return { ok: true, userId };
@@ -69,6 +79,15 @@ export async function registerUser(
 
 export const authOptions: NextAuthOptions = {
   providers: [
+    // GoogleProvider is only registered when credentials are configured.
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          }),
+        ]
+      : []),
     CredentialsProvider({
       name: "Email & Password",
       credentials: {
@@ -91,8 +110,31 @@ export const authOptions: NextAuthOptions = {
   ],
   session: { strategy: "jwt" },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) token.userId = user.id;
+    async signIn({ user, account }) {
+      // For Google sign-ins, provision a backend user on first login.
+      if (account?.provider === "google" && user.email) {
+        if (!googleUserStore.has(user.email)) {
+          const userId = generateUserId(user.email);
+          await createBackendUser(userId);
+          googleUserStore.set(user.email, userId);
+        }
+      }
+      return true;
+    },
+    async jwt({ token, user, account }) {
+      if (user) {
+        // Credentials sign-in: userId is already on user.id
+        token.userId = user.id;
+      }
+      if (account?.provider === "google" && token.email) {
+        // Google sign-in: look up the provisioned userId (set in signIn callback)
+        const userId = googleUserStore.get(token.email as string);
+        if (userId) token.userId = userId;
+      } else if (!token.userId && token.email) {
+        // Subsequent requests for Google users: re-read from store
+        const userId = googleUserStore.get(token.email as string);
+        if (userId) token.userId = userId;
+      }
       return token;
     },
     async session({ session, token }) {
