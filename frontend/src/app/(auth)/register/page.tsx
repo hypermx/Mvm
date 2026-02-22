@@ -8,7 +8,6 @@ import Link from "next/link";
 export default function RegisterPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
-  const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
@@ -31,7 +30,7 @@ export default function RegisterPage() {
     const res = await fetch("/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, userId }),
+      body: JSON.stringify({ email, password }),
     });
     if (!res.ok) {
       const body = await res.json();
@@ -72,21 +71,6 @@ export default function RegisterPage() {
             required
             autoComplete="email"
           />
-        </div>
-        <div className="field" style={{ marginBottom: "1rem" }}>
-          <label>User ID</label>
-          <input
-            type="text"
-            value={userId}
-            onChange={(e) => setUserId(e.target.value)}
-            placeholder="e.g. user_001"
-            required
-            pattern="[A-Za-z0-9_]+"
-            title="Letters, numbers and underscores only"
-          />
-          <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
-            Used to link your data and personal model
-          </span>
         </div>
         <div className="field" style={{ marginBottom: "1rem" }}>
           <label>Password</label>

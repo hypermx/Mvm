@@ -26,12 +26,19 @@ export const credentialStore = new Map<
 
 export async function registerUser(
   email: string,
-  password: string,
-  userId: string
-): Promise<{ ok: boolean; error?: string }> {
+  password: string
+): Promise<{ ok: boolean; userId?: string; error?: string }> {
   if (credentialStore.has(email)) {
     return { ok: false, error: "Email already registered" };
   }
+  // Derive a readable prefix from the email local part, then append a
+  // UUID-based suffix to guarantee global uniqueness.
+  const atIndex = email.indexOf("@");
+  const localPart = (atIndex > 0 ? email.slice(0, atIndex) : email)
+    .replace(/[^A-Za-z0-9]/g, "_")
+    .slice(0, 20);
+  const userId = `${localPart}_${crypto.randomUUID().replace(/-/g, "").slice(0, 8)}`;
+
   // Mirror the user in the backend so the ML pipeline can track them.
   // If the backend is temporarily unreachable we proceed anyway — the
   // profile will be created on first authenticated API request.
@@ -57,7 +64,7 @@ export async function registerUser(
   }
   const hash = await bcrypt.hash(password, 12);
   credentialStore.set(email, { userId, hash });
-  return { ok: true };
+  return { ok: true, userId };
 }
 
 export const authOptions: NextAuthOptions = {
